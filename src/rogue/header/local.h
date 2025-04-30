@@ -247,6 +247,7 @@ typedef struct
 #define WEAP_HYPERBLASTER 9
 #define WEAP_RAILGUN 10
 #define WEAP_BFG 11
+
 #define WEAP_DISRUPTOR 12
 #define WEAP_ETFRIFLE 13
 #define WEAP_PLASMA 14
