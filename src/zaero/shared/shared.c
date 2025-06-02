@@ -280,7 +280,7 @@ Q_fabs(float f)
 	
 	//return *(float *)&i_tmp;
 	float f_tmp;
-    memcpy(&f_tmp, &i_tmp, sizeof(i_tmp));
+	memcpy(&f_tmp, &i_tmp, sizeof(i_tmp));
 	return f_tmp;
 }
 

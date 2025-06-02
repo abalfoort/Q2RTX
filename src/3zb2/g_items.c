@@ -216,6 +216,8 @@ qboolean Pickup_Navi (edict_t *ent, edict_t *other)
 	int i,j,k;
 	qboolean	flg;
 
+	flg = false;
+
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
 	if(	ent->item->quantity && ent->classname[6] != 'F') SetRespawn (ent, ent->item->quantity);
 
@@ -1633,6 +1635,8 @@ qboolean ZIGDrop_Flag(edict_t *ent, gitem_t *item)
 	return true;
 }
 
+// void return of ZIGDrop_Flag
+// to prevent -Wincompatible-pointer-types warning
 void ZIGDrop_Flag_v(edict_t *ent, gitem_t *item)
 {
     ZIGDrop_Flag(ent, item);

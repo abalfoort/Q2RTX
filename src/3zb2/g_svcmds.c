@@ -274,7 +274,7 @@ void Move_LastRouteIndex()
 }
 
 //分岐付きに変換処理
-void	RouteTreepointSet()
+void	RouteTreepointSet(void)
 {
 	int	i;
 
@@ -297,7 +297,7 @@ void	Svcmd_Test_f (void)
 }
 
 //chainファイルのセーブ
-void SaveChain()
+void SaveChain(void)
 {
 	char name[256];
 	FILE *fpout;

@@ -2303,6 +2303,7 @@ void Bots_Move_NORM (edict_t *ent)
 
 	qboolean	ladderdrop;		
 
+	yaw = 0.0f;
 
 	trace_priority = TRP_NORMAL;	//trace on
 
