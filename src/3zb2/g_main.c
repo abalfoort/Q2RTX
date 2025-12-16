@@ -86,14 +86,6 @@ void SetBotFlag2(edict_t *ent);  //チーム2の旗
 //===================================================================
 
 
-/*
-=================
-GetGameAPI
-
-Returns a pointer to the structure with all entry points
-and global variables
-=================
-*/
 void ShutdownGame (void)
 {
 	gi.dprintf ("==== ShutdownGame ====\n");
@@ -106,14 +98,16 @@ void ShutdownGame (void)
 	SetBotFlag2(NULL);
 }
 
+
 /*
- * Returns a pointer to the structure with
- * all entry points and global variables
- *
- * yquake2 does not use q_exported which
- * will cause Q2RTX to not find the dll
- */
-q_exported game_export_t *
+=================
+GetGameAPI
+
+Returns a pointer to the structure with all entry points
+and global variables
+=================
+*/
+Q2_DLL_EXPORTED game_export_t *
 GetGameAPI(game_import_t *import)
 {
 	gi = *import;

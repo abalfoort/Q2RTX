@@ -74,29 +74,29 @@
  * macros, implemented by savegame version YQ2-1.
  */
 #if defined(__APPLE__)
-#define OSTYPE_1 "MacOS X"
+#define YQ2OSTYPE_1 "MacOS X"
 #elif defined(__FreeBSD__)
-#define OSTYPE_1 "FreeBSD"
+#define YQ2OSTYPE_1 "FreeBSD"
 #elif defined(__OpenBSD__)
-#define OSTYPE_1 "OpenBSD"
+#define YQ2OSTYPE_1 "OpenBSD"
 #elif defined(__linux__)
- #define OSTYPE_1 "Linux"
+ #define YQ2OSTYPE_1 "Linux"
 #elif defined(_WIN32)
- #define OSTYPE_1 "Windows"
+ #define YQ2OSTYPE_1 "Windows"
 #else
- #define OSTYPE_1 "Unknown"
+ #define YQ2OSTYPE_1 "Unknown"
 #endif
 
 #if defined(__i386__)
-#define ARCH_1 "i386"
+#define YQ2ARCH_1 "i386"
 #elif defined(__x86_64__)
-#define ARCH_1 "amd64"
+#define YQ2ARCH_1 "amd64"
 #elif defined(__sparc__)
-#define ARCH_1 "sparc64"
+#define YQ2ARCH_1 "sparc64"
 #elif defined(__ia64__)
- #define ARCH_1 "ia64"
+ #define YQ2ARCH_1 "ia64"
 #else
- #define ARCH_1 "unknown"
+ #define YQ2ARCH_1 "unknown"
 #endif
 
 /*
@@ -866,7 +866,7 @@ ReadGame(const char *filename)
 			fclose(f);
 			gi.error("Savegame from another game.so.\n");
 		}
-		else if (strcmp(sv.os, OSTYPE_1) != 0)
+		else if (strcmp(sv.os, YQ2OSTYPE_1) != 0)
 		{
 			fclose(f);
 			gi.error("Savegame from another os.\n");
@@ -880,7 +880,7 @@ ReadGame(const char *filename)
 			gi.error("Savegame from another architecture.\n");
 		}
 #else
-		if (strcmp(sv.arch, ARCH_1) != 0)
+		if (strcmp(sv.arch, YQ2ARCH_1) != 0)
 		{
 			fclose(f);
 			gi.error("Savegame from another architecture.\n");
