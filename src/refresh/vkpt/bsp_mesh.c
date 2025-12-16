@@ -959,6 +959,7 @@ collect_one_light_poly_entire_texture(bsp_t *bsp, mface_t *surf, mtexinfo_t *tex
 
 		light.material = texinfo->material;
 		light.style = light_style;
+		light.type = LIGHT_POLYGON;
 
 		if(!get_triangle_off_center(light.positions, light.off_center, NULL, 1.f))
 			continue;
@@ -1113,6 +1114,7 @@ collect_one_light_poly(bsp_t *bsp, mface_t *surf, mtexinfo_t *texinfo, int model
 				light_poly_t* light = append_light_poly(num_lights, allocated_lights, lights);
 				light->material = texinfo->material;
 				light->style = light_style;
+				light->type = LIGHT_POLYGON;
 				light->emissive_factor = emissive_factor;
 				VectorCopy(instance_positions[0], light->positions + 0);
 				VectorCopy(instance_positions[i1], light->positions + 3);
@@ -1328,6 +1330,7 @@ collect_sky_and_lava_light_polys(bsp_mesh_t *wm, bsp_t* bsp)
 			}
 
 			light.style = 0;
+			light.type = LIGHT_POLYGON;
 
 			if (!get_triangle_off_center(light.positions, light.off_center, NULL, 1.f))
 				continue;
