@@ -1167,7 +1167,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         Q_concat(path, sizeof(path), "textures/", out->name, ".mat");
         FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
         if (f) {
-            FS_Read(out->material, sizeof(out->material) - 1, f);
+            FS_Read(out->step_material, sizeof(out->step_material) - 1, f);
             FS_CloseFile(f);
         }
 
@@ -1260,7 +1260,7 @@ static void BSP_LoadBspxNormals(bsp_t* bsp, const byte* in, size_t data_size)
 
 static size_t BSP_ParseNormalsHeader(bsp_t* bsp, const byte* in, size_t data_size)
 {
-    return data_size;
+    return data_size + HUNK_ALIGN - 1; // extra memory to account for alignment in ALLOC()
 }
 
 static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
@@ -1331,7 +1331,7 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
                 break;
             }
             if (e->parse_header)
-                extrasize += e->parse_header(bsp, buf + ofs, len);
+                extrasize += ALIGN(e->parse_header(bsp, buf + ofs, len), HUNK_ALIGN); // to mirror Hunk_TryAlloc() overallocation
             out[j].fileofs = ofs;
             out[j].filelen = len;
             break;
@@ -1432,7 +1432,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         lump_count[i] = count;
 
         // round to cacheline
-        memsize += ALIGN(count * info->memsize, 64);
+        memsize += ALIGN(count * info->memsize, HUNK_ALIGN);
         maxpos = max(maxpos, end);
     }
 
@@ -1764,7 +1764,7 @@ mmodel_t *BSP_InlineModel(bsp_t *bsp, const char *name)
     Q_assert(name);
     Q_assert(name[0] == '*');
 
-    num = atoi(name + 1);
+    num = Q_atoi(name + 1);
     if (num < 1 || num >= bsp->nummodels) {
         Com_Error(ERR_DROP, "%s: bad number: %d", __func__, num);
     }

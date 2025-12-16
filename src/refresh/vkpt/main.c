@@ -2857,7 +2857,7 @@ prepare_ubo(refdef_t *fd, mleaf_t* viewleaf, const reference_mode_t* ref_mode, c
 		// adjust texture LOD bias to the resolution scale, i.e. use negative bias if scale is < 100
 		float resolution_scale = (drs_effective_scale != 0) ? (float)drs_effective_scale : (float)scr_viewsize->integer;
 		resolution_scale *= 0.01f;
-		clamp(resolution_scale, 0.1f, 1.f);
+		resolution_scale = Q_clipf(resolution_scale, 0.1f, 1.f);
 		ubo->pt_texture_lod_bias = cvar_pt_texture_lod_bias->value + log2f(resolution_scale);
 	}
 
@@ -3461,13 +3461,13 @@ static void drs_process(void)
 	if (representative_time < target_time * cvar_drs_adjust_up->value)
 	{
 		f += 0.5;
-		clamp(f, 1, 10);
+		f = Q_clipf(f, 1, 10);
 		scale += (int)f;
 	}
 	else if (representative_time > target_time * cvar_drs_adjust_down->value)
 	{
 		f -= 0.5;
-		clamp(f, -1, -10);
+		f = Q_clipf(f, -1, -10);
 		scale += f;
 	}
 
@@ -4016,7 +4016,9 @@ IMG_ReadPixels_RTX(screenshot_t *s)
 		.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
 	);
 
-	IMAGE_BARRIER(cmd_buf,
+	IMAGE_BARRIER_STAGES(cmd_buf,
+		VK_PIPELINE_STAGE_HOST_BIT,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		.image = qvk.screenshot_image,
 		.subresourceRange = subresource_range,
 		.srcAccessMask = VK_ACCESS_HOST_READ_BIT,
@@ -4045,7 +4047,9 @@ IMG_ReadPixels_RTX(screenshot_t *s)
 		.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 	);
 
-	IMAGE_BARRIER(cmd_buf,
+	IMAGE_BARRIER_STAGES(cmd_buf,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		VK_PIPELINE_STAGE_HOST_BIT,
 		.image = qvk.screenshot_image,
 		.subresourceRange = subresource_range,
 		.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,

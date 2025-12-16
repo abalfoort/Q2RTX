@@ -140,11 +140,6 @@ extern const sndapi_t   snd_openal;
 
 //====================================================================
 
-// only begin attenuating sound volumes when outside the FULLVOLUME range
-#define SOUND_FULLVOLUME        80
-
-#define SOUND_LOOPATTENUATE     0.003f
-
 extern sndstarted_t s_started;
 extern bool         s_active;
 extern sndapi_t     s_api;
@@ -166,12 +161,6 @@ extern cvar_t       *s_show;
 extern cvar_t       *s_underwater;
 extern cvar_t       *s_underwater_gain_hf;
 
-// clip integer to [-0x8000, 0x7FFF] range (stolen from FFmpeg)
-static inline int clip16(int v)
-{
-    return ((v + 0x8000U) & ~0xFFFF) ? (v >> 31) ^ 0x7FFF : v;
-}
-
 #define S_IsFullVolume(ch) \
     ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)
 
@@ -186,5 +175,7 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
+float S_GetEntityLoopVolume(const centity_state_t *ent);
+float S_GetEntityLoopDistMult(const centity_state_t *ent);
 
 bool OGG_Load(sizebuf_t *sz);

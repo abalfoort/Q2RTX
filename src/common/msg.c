@@ -450,11 +450,6 @@ void MSG_WriteDir(const vec3_t dir)
     MSG_WriteByte(best);
 }
 
-static inline int clip_byte(int v)
-{
-    return clamp(v, 0, 255);
-}
-
 void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext)
 {
     // allow 0 to accomodate empty baselines
@@ -482,15 +477,21 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity
     out->event = in->event;
     if (ext) {
         out->morefx = ext->morefx;
-        out->alpha = clip_byte(ext->alpha * 255.0f);
-        out->scale = clip_byte(ext->scale * 16.0f);
-        out->loop_volume = clip_byte(ext->loop_volume * 255.0f);
-        out->loop_attenuation = clip_byte(ext->loop_attenuation * 64.0f);
+        out->alpha = Q_clip_uint8(ext->alpha * 255.0f);
+        out->scale = Q_clip_uint8(ext->scale * 16.0f);
+        out->loop_volume = Q_clip_uint8(ext->loop_volume * 255.0f);
+        // encode ATTN_STATIC (192) as 0, and ATTN_LOOP_NONE (-1) as 192
+        if (ext->loop_attenuation == ATTN_LOOP_NONE) {
+            out->loop_attenuation = 192;
+        } else {
+            out->loop_attenuation = Q_clip_uint8(ext->loop_attenuation * 64.0f);
+            if (out->loop_attenuation == 192)
+                out->loop_attenuation = 0;
+        }
         // save network bandwidth
         if (out->alpha == 255) out->alpha = 0;
         if (out->scale == 16) out->scale = 0;
         if (out->loop_volume == 255) out->loop_volume = 0;
-        if (out->loop_attenuation == 192) out->loop_attenuation = 0;
     }
 }
 
@@ -780,17 +781,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
         MSG_WriteByte(to->scale);
 }
 
-static inline int OFFSET2CHAR(float x)
-{
-    int v = x * 4;
-    return clamp(v, -128, 127);
-}
-
-static inline int BLEND2BYTE(float x)
-{
-    int v = x * 255;
-    return clamp(v, 0, 255);
-}
+#define OFFSET2CHAR(x)  Q_clip_int8((x) * 4)
 
 void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 {
@@ -805,7 +796,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
     out->gunindex = in->gunindex;
     out->gunframe = in->gunframe;
     for (i = 0; i < 4; i++)
-        out->blend[i] = BLEND2BYTE(in->blend[i]);
+        out->blend[i] = Q_clip_uint8(in->blend[i] * 255);
     out->fov = (int)in->fov;
     out->rdflags = in->rdflags;
     for (i = 0; i < MAX_STATS; i++)
@@ -1912,8 +1903,13 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
             to->sound = w & 0x3fff;
             if (w & 0x4000)
                 ext->loop_volume = MSG_ReadByte() / 255.0f;
-            if (w & 0x8000)
-                ext->loop_attenuation = MSG_ReadByte() / 64.0f;
+            if (w & 0x8000) {
+                int b = MSG_ReadByte();
+                if (b == 192)
+                    ext->loop_attenuation = ATTN_LOOP_NONE;
+                else
+                    ext->loop_attenuation = b / 64.0f;
+            }
         } else {
             to->sound = MSG_ReadByte();
         }
