@@ -4,6 +4,22 @@ cmake_policy(SET CMP0069 NEW)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+if (MSVC)
+    add_compile_options(/MP) # parallel build (use all cores, or as many as configured in VS)
+
+    # ignore some compiler warnings
+    add_compile_options(/wd4244 /wd4305) # possible loss of data/truncation (double to float etc; ignore)
+    add_compile_options(/wd4018) # signed/unsigned mismatch
+    add_compile_options(/wd4996) # 'function': was declared deprecated (like all that secure CRT stuff)
+    # don't show me warnings for system headers, why the fuck isn't this default
+    add_compile_options(/experimental:external /external:W0)
+else() # GCC/clang/mingw
+    # Enforce compiler flags:
+    #  -fno-strict-aliasing -> Quake 2 is far away from strict aliasing
+    #  -fwrapv              -> Make signed integer overflows defined
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing -fwrapv")
+endif() # MSVC'S else-case
+
 SET(SRC_CTF
     menu/menu.c
     monster/move.c
