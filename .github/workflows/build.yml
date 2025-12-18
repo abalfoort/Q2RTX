@@ -44,8 +44,12 @@ jobs:
           q2rtx.exe
           q2rtxded.exe
           q2rtxded-x86.exe
+          3zb2/
           baseq2/
+          ctf/
           rogue/
+          xatrix/
+          zaero/
           license.txt
           notice.txt
 
@@ -87,7 +91,11 @@ jobs:
         path: |
           q2rtx
           q2rtxded
+          3zb2/
           baseq2/
+          ctf/
           rogue/
+          xatrix/
+          zaero/
           license.txt
           notice.txt
