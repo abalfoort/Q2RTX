@@ -1,16 +1,22 @@
-# Quake II RTX
+# Quake II RTX with mission packs
 
-## Project Discontinued by NVIDIA
-
-**This repository is no longer maintained.**
+**Nvidia archived its Q2RTX repository on Dec 11, 2025**
 
 This project is now a standalone (no forked relation) project of Nvidia's project.
+It combines the [Q2RTX](https://github.com/NVIDIA/Q2RTX/) project and [Yquake2](https://github.com/yquake2) for the mission packs.
+
+**Supported mission packs**
+  - The Reckoning (xatrix)
+  - Ground Zero (rogue)
+  - Zaero
+  - Capture the Flag
+  - 2bz2 (bots)
 
 <br>
 <br>
 <br>
 
-## Original README
+## NVIDIA Q2RTX original README
 
 **Quake II RTX** is NVIDIA's attempt at implementing a fully functional 
 version of Id Software's 1997 hit game **Quake II** with RTX path-traced 
