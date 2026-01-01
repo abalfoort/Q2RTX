@@ -1083,6 +1083,8 @@ extern void SP_item_health ( edict_t * self ) ;
 extern void SpawnItem ( edict_t * ent , gitem_t * item ) ;
 extern void PrecacheItem ( gitem_t * it ) ;
 extern void droptofloor ( edict_t * ent ) ;
+extern void flare_think ( edict_t * self ) ;
+extern void flare_touch ( edict_t * self , edict_t * other , cplane_t * plane , csurface_t * surf ) ;
 extern void Use_Item ( edict_t * ent , edict_t * other , edict_t * activator ) ;
 extern edict_t * Drop_Item ( edict_t * ent , gitem_t * item ) ;
 extern void drop_make_touchable ( edict_t * ent ) ;

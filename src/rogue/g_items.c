@@ -26,6 +26,8 @@ void Weapon_Grenade(edict_t *ent);
 void Weapon_GrenadeLauncher(edict_t *ent);
 void Weapon_Railgun(edict_t *ent);
 void Weapon_BFG(edict_t *ent);
+void Weapon_FlareGun(edict_t *ent);
+
 void Weapon_ChainFist(edict_t *ent);
 void Weapon_Disintegrator(edict_t *ent);
 void Weapon_ETF_Rifle(edict_t *ent);
@@ -33,7 +35,6 @@ void Weapon_Heatbeam(edict_t *ent);
 void Weapon_Prox(edict_t *ent);
 void Weapon_Tesla(edict_t *ent);
 void Weapon_ProxLauncher(edict_t *ent);
-void Weapon_FlareGun(edict_t *ent);
 
 gitem_armor_t jacketarmor_info = {25, 50, .30, .00, ARMOR_JACKET};
 gitem_armor_t combatarmor_info = {50, 100, .60, .30, ARMOR_COMBAT};

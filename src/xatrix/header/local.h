@@ -217,9 +217,11 @@ typedef struct
 #define WEAP_HYPERBLASTER 9
 #define WEAP_RAILGUN 10
 #define WEAP_BFG 11
-#define WEAP_PHALANX 12
-#define WEAP_BOOMER 13
-#define WEAP_FLAREGUN 14
+#define WEAP_FLAREGUN 12
+
+// Xatrix
+#define WEAP_PHALANX 13
+#define WEAP_BOOMER 14
 
 typedef struct gitem_s
 {
