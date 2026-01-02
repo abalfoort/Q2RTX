@@ -1424,53 +1424,76 @@ void SP_misc_gib_head(edict_t *ent)
 used with target_string (must be on same "team")
 "count" is position in the string (starts at 1)
 */
+#define TARGET_CHAR_DASH 10
+#define TARGET_CHAR_COLON 11
+#define TARGET_CHAR_BLANK 12
 
-void SP_target_character(edict_t *self)
+static int
+_target_character_getframe(char c)
 {
+	if ((c >= '0') && (c <= '9'))
+	{
+		return c - '0';
+	}
+
+	if (c == '-')
+	{
+		return TARGET_CHAR_DASH;
+	}
+
+	if (c == ':')
+	{
+		return TARGET_CHAR_COLON;
+	}
+
+	return TARGET_CHAR_BLANK;
+}
+
+void
+SP_target_character(edict_t *self)
+{
+    if (!self)
+	{
+		return;
+	}
+
     self->movetype = MOVETYPE_PUSH;
     gi.setmodel(self, self->model);
     self->solid = SOLID_BSP;
-    self->s.frame = 12;
+    self->s.frame = TARGET_CHAR_BLANK;
     gi.linkentity(self);
-    return;
 }
 
 /*QUAKED target_string (0 0 1) (-8 -8 -8) (8 8 8)
 */
-
-void target_string_use(edict_t *self, edict_t *other, edict_t *activator)
+static void
+_target_string_apply(edict_t *tm, const char *str)
 {
-    edict_t *e;
-    int     n, l;
-    char    c;
+	edict_t *e;
+	size_t l, n;
 
-    l = strlen(self->message);
-    for (e = self->teammaster; e; e = e->teamchain) {
-        if (!e->count)
-            continue;
-        n = e->count - 1;
-        if (n > l) {
-            e->s.frame = 12;
-            continue;
-        }
+	l = str ? strlen(str) : 0;
 
-        c = self->message[n];
-        if (c >= '0' && c <= '9')
-            e->s.frame = c - '0';
-        else if (c == '-')
-            e->s.frame = 10;
-        else if (c == ':')
-            e->s.frame = 11;
-        else
-            e->s.frame = 12;
-    }
+	for (e = tm; e && e->inuse; e = e->teamchain)
+	{
+		if (e->count > 0)
+		{
+			n = e->count - 1;
+			e->s.frame = _target_character_getframe((n < l) ? str[n] : ' ');
+		}
+	}
 }
 
-void SP_target_string(edict_t *self)
+void
+target_string_use(edict_t *self, edict_t *other /* unused */, edict_t *activator /* unused */)
 {
-    if (!self->message)
-        self->message = "";
-    self->use = target_string_use;
+	_target_string_apply(self->teammaster, self->message);
+}
+
+void
+SP_target_string(edict_t *self)
+{
+	self->use = target_string_use;
 }
 
 /*QUAKED func_clock (0 0 1) (-8 -8 -8) (8 8 8) TIMER_UP TIMER_DOWN START_OFF MULTI_USE
@@ -1485,140 +1508,251 @@ If START_OFF, this entity must be used before it starts
             1 "xx:xx"
             2 "xx:xx:xx"
 */
+#define FUNC_CLOCK_SF_UP 1
+#define FUNC_CLOCK_SF_DOWN 2
+#define FUNC_CLOCK_SF_OFF 4
+#define FUNC_CLOCK_SF_MULUSE 8
 
-static void func_clock_reset(edict_t *self)
+#define CLOCK_TYPE_S 0
+#define CLOCK_TYPE_MS 1
+#define CLOCK_TYPE_HMS 2
+
+#define CLOCK_MESSAGE_SIZE 16
+
+static void
+func_clock_reset(edict_t *self)
 {
-    self->activator = NULL;
-    if (self->spawnflags & 1) {
-        self->health = 0;
-        self->wait = self->count;
-    } else if (self->spawnflags & 2) {
-        self->health = self->count;
-        self->wait = 0;
-    }
+	if (!self)
+	{
+		return;
+	}
+
+	self->activator = NULL;
+
+	if (self->spawnflags & FUNC_CLOCK_SF_UP)
+	{
+		self->health = 0;
+	}
+	else if (self->spawnflags & FUNC_CLOCK_SF_DOWN)
+	{
+		self->health = self->count;
+	}
 }
 
-static void func_clock_format_countdown(edict_t *self)
+static void
+func_clock_format_counter(int type, int t, char *str, size_t str_sz)
 {
-    if (self->style == 0) {
-        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
-        return;
-    }
+	if (!str || !str_sz)
+	{
+		return;
+	}
 
-    if (self->style == 1) {
-        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i", self->health / 60, self->health % 60);
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
-        return;
-    }
-
-    if (self->style == 2) {
-        Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", self->health / 3600, (self->health - (self->health / 3600) * 3600) / 60, self->health % 60);
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
-        if (self->message[6] == ' ')
-            self->message[6] = '0';
-        return;
-    }
+	switch (type)
+	{
+		case CLOCK_TYPE_S:
+			Q_snprintf(str, str_sz, "%2i\n", t);
+			break;
+		case CLOCK_TYPE_MS:
+			Q_snprintf(str, str_sz, "%2i:%02i\n",
+				t / 60, t % 60);
+			break;
+		case CLOCK_TYPE_HMS:
+			Q_snprintf(str, str_sz, "%2i:%02i:%02i\n",
+				t / 3600,
+				(t - ((t / 3600) * 3600)) / 60,
+				t % 60);
+			break;
+		default:
+			*str = '\0';
+	}
 }
 
-void func_clock_think(edict_t *self)
+static void
+func_clock_format_currtime(char *str, size_t str_sz)
 {
-    if (!self->enemy) {
-        self->enemy = G_Find(NULL, FOFS(targetname), self->target);
-        if (!self->enemy)
-            return;
-    }
+	struct tm *ltime;
+	time_t gmtime;
 
-    if (self->spawnflags & 1) {
-        func_clock_format_countdown(self);
-        self->health++;
-    } else if (self->spawnflags & 2) {
-        func_clock_format_countdown(self);
-        self->health--;
-    } else {
-        struct tm   *ltime;
-        time_t      gmtime;
+	if (!str || !str_sz)
+	{
+		return;
+	}
 
-        gmtime = time(NULL);
-        ltime = localtime(&gmtime);
-        if (ltime)
-            Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
-        else
-            strcpy(self->message, "00:00:00");
-        if (self->message[3] == ' ')
-            self->message[3] = '0';
-        if (self->message[6] == ' ')
-            self->message[6] = '0';
-    }
+	time(&gmtime);
+	ltime = localtime(&gmtime);
 
-    self->enemy->message = self->message;
-    self->enemy->use(self->enemy, self, self);
-
-    if (((self->spawnflags & 1) && (self->health > self->wait)) ||
-        ((self->spawnflags & 2) && (self->health < self->wait))) {
-        if (self->pathtarget) {
-            char *savetarget;
-            char *savemessage;
-
-            savetarget = self->target;
-            savemessage = self->message;
-            self->target = self->pathtarget;
-            self->message = NULL;
-            G_UseTargets(self, self->activator);
-            self->target = savetarget;
-            self->message = savemessage;
-        }
-
-        if (!(self->spawnflags & 8))
-            return;
-
-        func_clock_reset(self);
-
-        if (self->spawnflags & 4)
-            return;
-    }
-
-    self->nextthink = level.framenum + 1 * BASE_FRAMERATE;
+	Q_snprintf(str, str_sz, "%2i:%02i:%02i\n",
+		ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
 }
 
-void func_clock_use(edict_t *self, edict_t *other, edict_t *activator)
+static qboolean
+ent_is_target_string(const edict_t *e)
 {
-    if (!(self->spawnflags & 8))
-        self->use = NULL;
-    if (self->activator)
-        return;
-    self->activator = activator;
-    self->think(self);
+	return (e && e->inuse &&
+		e->classname && strcmp(e->classname, "target_string") == 0) ? true : false;
 }
 
-void SP_func_clock(edict_t *self)
+static qboolean
+_func_clock_check_strent(edict_t *self)
 {
-    if (!self->target) {
-        gi.dprintf("%s with no target at %s\n", self->classname, vtos(self->s.origin));
-        G_FreeEdict(self);
-        return;
-    }
+	if (ent_is_target_string(self->enemy))
+	{
+		return true;
+	}
 
-    if ((self->spawnflags & 2) && (!self->count)) {
-        gi.dprintf("%s with no count at %s\n", self->classname, vtos(self->s.origin));
-        G_FreeEdict(self);
-        return;
-    }
+	self->enemy = G_Find(NULL, FOFS(targetname), self->target);
 
-    if ((self->spawnflags & 1) && (!self->count))
-        self->count = 60 * 60;;
+	if (!ent_is_target_string(self->enemy))
+	{
+		self->enemy = NULL;
+		return false;
+	}
 
-    func_clock_reset(self);
+	return true;
+}
 
-    self->message = gi.TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
+void
+func_clock_think(edict_t *self)
+{
+	char str[CLOCK_MESSAGE_SIZE];
 
-    self->think = func_clock_think;
+	if (!self)
+	{
+		return;
+	}
 
-    if (self->spawnflags & 4)
-        self->use = func_clock_use;
-    else
-        self->nextthink = level.framenum + 1 * BASE_FRAMERATE;
+	if (_func_clock_check_strent(self))
+	{
+		*str = '\0';
+
+		if (self->spawnflags & (FUNC_CLOCK_SF_UP|FUNC_CLOCK_SF_DOWN))
+		{
+			func_clock_format_counter(self->style, self->health, str, sizeof(str));
+		}
+		else
+		{
+			func_clock_format_currtime(str, sizeof(str));
+		}
+
+		_target_string_apply(self->enemy->teammaster, str);
+	}
+
+	if (self->spawnflags & FUNC_CLOCK_SF_UP)
+	{
+		self->health++;
+	}
+	else if (self->spawnflags & FUNC_CLOCK_SF_DOWN)
+	{
+		self->health--;
+	}
+
+	if (((self->spawnflags & FUNC_CLOCK_SF_UP) && (self->health > self->count)) ||
+		((self->spawnflags & FUNC_CLOCK_SF_DOWN) && (self->health < 0)))
+	{
+		if (self->pathtarget)
+		{
+			char *savetarget;
+			char *savemessage;
+
+			savetarget = self->target;
+			savemessage = self->message;
+			self->target = self->pathtarget;
+			self->message = NULL;
+			G_UseTargets(self, self->activator);
+			self->target = savetarget;
+			self->message = savemessage;
+		}
+
+		if (!(self->spawnflags & FUNC_CLOCK_SF_MULUSE))
+		{
+			self->think = G_FreeEdict;
+			self->nextthink = level.time + 1;
+			return;
+		}
+
+		func_clock_reset(self);
+
+		if (self->spawnflags & FUNC_CLOCK_SF_OFF)
+		{
+			return;
+		}
+	}
+
+	self->nextthink = level.time + 1;
+}
+
+void
+func_clock_use(edict_t *self, edict_t *other /* unused */, edict_t *activator)
+{
+	if (!self)
+	{
+		return;
+	}
+
+	if (!self->think)
+	{
+		return;
+	}
+
+	if (!(self->spawnflags & FUNC_CLOCK_SF_MULUSE))
+	{
+		self->use = NULL;
+	}
+
+	if (self->activator)
+	{
+		return;
+	}
+
+	self->activator = activator;
+	self->think(self);
+}
+
+void
+SP_func_clock(edict_t *self)
+{
+	if (!self)
+	{
+		return;
+	}
+
+	if (!self->target)
+	{
+		gi.dprintf("%s with no target at %s\n", self->classname,
+				vtos(self->s.origin));
+
+		G_FreeEdict(self);
+		return;
+	}
+
+	if ((self->spawnflags & FUNC_CLOCK_SF_DOWN) &&
+		(self->count <= 0))
+	{
+		gi.dprintf("%s with no count at %s\n", self->classname,
+				vtos(self->s.origin));
+
+		G_FreeEdict(self);
+		return;
+	}
+
+	if ((self->spawnflags & FUNC_CLOCK_SF_UP) &&
+		(self->count <= 0))
+	{
+		self->count = 3600;
+	}
+
+	func_clock_reset(self);
+
+	self->think = func_clock_think;
+
+	if (self->spawnflags & FUNC_CLOCK_SF_OFF)
+	{
+		self->use = func_clock_use;
+	}
+	else
+	{
+		self->nextthink = level.time + 1;
+	}
 }
 
 //=================================================================================
