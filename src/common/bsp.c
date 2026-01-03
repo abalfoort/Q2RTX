@@ -1064,16 +1064,20 @@ static bool BSP_GetPatchedPVSFileName(const char* map_path, char pvs_path[MAX_QP
 	if (path_len < 5 || strcmp(map_path + path_len - 4, ".bsp") != 0)
 		return false;
 
-	const char* map_file = strrchr(map_path, '/');
+	char* map_file = strrchr(map_path, '/');
 	if (map_file)
 		map_file += 1;
 	else
 		map_file = map_path;
 
+	// Remove the .bsp extension
+	size_t map_file_len = strlen(map_file);
+	map_file[map_file_len - 4] = '\0'; // remove .bsp
+
 	memset(pvs_path, 0, MAX_QPATH);
 	strncpy(pvs_path, map_path, map_file - map_path);
 	strcat(pvs_path, "pvs/");
-	strncat(pvs_path, map_file, strlen(map_file) - 4);
+	strcat(pvs_path, map_file);
 	strcat(pvs_path, ".bin");
 
 	return true;
