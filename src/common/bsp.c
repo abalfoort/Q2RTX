@@ -1058,7 +1058,7 @@ byte* BSP_GetPvs2(bsp_t *bsp, int cluster)
 }
 
 // Converts `maps/<name>.bsp` into `maps/pvs/<name>.bin`
-static bool BSP_GetPatchedPVSFileName(const char* map_path, char pvs_path[MAX_QPATH])
+static bool BSP_GetPatchedPVSFileName(char* map_path, char pvs_path[MAX_QPATH])
 {
 	int path_len = strlen(map_path);
 	if (path_len < 5 || strcmp(map_path + path_len - 4, ".bsp") != 0)
