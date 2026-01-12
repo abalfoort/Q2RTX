@@ -53,6 +53,15 @@ extern cvar_t* vid_rtx;
 extern cvar_t* gl_use_hd_assets;
 #endif
 
+// Rogue base path overrides for pics images
+const char *image_overrides[5] = {
+    "pics/m_",
+    "pics/conback",
+    "pics/loading",
+    "pics/pause",
+    "pics/yn"
+};
+
 /*
 ====================================================================
 
@@ -1483,6 +1492,19 @@ static image_t *find_or_load_image(const char *name, size_t len,
             try_location >= TRY_IMAGE_SRC_BASE;
             try_location--)
         {
+            /* Special-case mission packs: force loading from BASE for image_overrides images */
+            if (is_not_baseq2 && try_location == TRY_IMAGE_SRC_GAME)
+            {
+                for (size_t i = 0; i < sizeof(image_overrides) / sizeof(image_overrides[0]); i++)
+                {
+                    if (strncmp(name, image_overrides[i], sizeof(image_overrides[i]) - 1) == 0)
+                    {
+                        try_location = TRY_IMAGE_SRC_BASE;
+                        break;
+                    }
+                }
+            }
+
             int location_flag = try_location == TRY_IMAGE_SRC_GAME ? IF_SRC_GAME : IF_SRC_BASE;
             if(((flags & IF_SRC_MASK) != 0) && ((flags & IF_SRC_MASK) != location_flag))
                 continue;
