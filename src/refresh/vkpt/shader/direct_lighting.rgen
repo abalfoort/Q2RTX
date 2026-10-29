@@ -610,6 +610,7 @@ main()
 	else
 		direct_lighting(ipos, high_freq, specular);
 
+	high_freq *= STORAGE_SCALE_HF;
 	specular *= STORAGE_SCALE_SPEC;
 
 #if RESTIR_PACK_SELFTEST
