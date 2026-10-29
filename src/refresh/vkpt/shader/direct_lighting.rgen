@@ -31,6 +31,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma optionNV(unroll all)
 
 #define ENABLE_SHADOW_CAUSTICS
+
+/* set to 1 for a debug build that runs restir_pack_selftest() */
+#define RESTIR_PACK_SELFTEST 0
+
+/* set to 1 for a debug build that marks pixels where the W clamp engages */
+#define RESTIR_CLAMP_DEBUG 0
+
 #include "restir.h"
 #include "checkerboard.glsl"
 #include "projection.glsl"
@@ -466,11 +473,21 @@ direct_lighting_restir(ivec2 ipos, out vec3 high_freq, out vec3 o_specular)
 	high_freq = clamp_output(high_freq);
 	o_specular = clamp_output(o_specular);
 
-    // Verified means: the shadow ray for the selected light was actually tested,
-    // either by this pixel or by the temporal chain this reservoir came from.
-    // Spatially imported lights are never marked verified, so untested light
-    // cannot spread into other pixels' spatial imports or temporal histories.
-    bool light_verified = r.y != RESTIR_INVALID_ID && r_verified;
+	// Verified means: the shadow ray for the selected light was actually tested,
+	// either by this pixel or by the temporal chain this reservoir came from.
+	// Spatially imported lights are never marked verified, so untested light
+	// cannot spread into other pixels' spatial imports or temporal histories.
+	bool light_verified = r.y != RESTIR_INVALID_ID && r_verified;
+
+#if RESTIR_CLAMP_DEBUG
+	/* Debug: mark pixels whose weight exceeds the fp16 packing limit, so the
+	 * clamp in pack_reservoir() actually engages here. Bright magenta spots
+	 * = clamp sites. The marker replaces the pixel's lighting contribution,
+	 * so it is unmissable even in dark scenes. */
+	if(r.y != RESTIR_INVALID_ID && r.W > RESTIR_W_MAX)
+		high_freq = vec3(16.0, 0.0, 16.0);
+#endif
+
 	imageStore(IMG_PT_RESTIR_A, ipos, uvec4(pack_reservoir(r, light_verified)));
 
 }
@@ -593,9 +610,20 @@ main()
 	else
 		direct_lighting(ipos, high_freq, specular);
 
-	high_freq *= STORAGE_SCALE_HF;
 	specular *= STORAGE_SCALE_SPEC;
-	
+
+#if RESTIR_PACK_SELFTEST
+	/* Debug: run the pack/unpack round-trip selftest and paint the
+	 * top-left 16x16 block with the result: green = all checks
+	 * passed, red = failures (the suite is deterministic). */
+	if(ipos.x < 16 && ipos.y < 16)
+	{
+		uint failures = restir_pack_selftest();
+		high_freq = vec3(failures > 0 ? STORAGE_SCALE_HF : 0.0,
+				failures == 0 ? STORAGE_SCALE_HF : 0.0, 0.0);
+	}
+#endif
+
 	imageStore(IMG_PT_COLOR_LF_SH, ipos, vec4(0));
 	imageStore(IMG_PT_COLOR_LF_COCG, ipos, vec4(0));
 	imageStore(IMG_PT_COLOR_HF, ipos, uvec4(packRGBE(high_freq)));
